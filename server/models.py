@@ -31,6 +31,7 @@ class User(db.Model, SerializerMixin):
     username = db.Column(db.String, unique=True)
 
     articles = db.relationship('Article', backref='user')
+    
 
     def __repr__(self):
         return f'User {self.username}, ID {self.id}'

@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-
+# #!/usr/bin/env python3
 from flask import Flask, make_response, jsonify, request, session
 from flask_migrate import Migrate
-from flask_restful import Api, Resource
+from flask_restful import Api, Resource, reqparse
 
 from models import db, Article, User
 
@@ -18,6 +17,37 @@ db.init_app(app)
 
 api = Api(app)
 
+login_args = reqparse.RequestParser()
+login_args.add_argument('username',type=str, help="username ")
+# login_args.add_argument('user_id',type=str, help="user id ")
+
+class Login(Resource):
+    
+    def post(self):
+        username = login_args.parse_args()['username']
+        user = User.query.filter_by(username=username).first()
+        session['user_id']= user.id
+        user_dict = user.to_dict()
+
+        return user_dict,200
+        
+class Logout(Resource):
+
+    def delete(self):
+        del session['user_id']
+        return {}, 204
+    
+class CheckSession(Resource):
+    
+    def get(self):
+        user_id = session.get('user_id',None)
+        if user_id:
+            user = User.query.filter_by(id = session['user_id']).first()
+            return user.to_dict() 
+        else:
+            return {},401 
+
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -25,7 +55,7 @@ class ClearSession(Resource):
         session['page_views'] = None
         session['user_id'] = None
 
-        return {}, 204
+        return  204
 
 class IndexArticle(Resource):
     
@@ -51,6 +81,9 @@ class ShowArticle(Resource):
 api.add_resource(ClearSession, '/clear')
 api.add_resource(IndexArticle, '/articles')
 api.add_resource(ShowArticle, '/articles/<int:id>')
+api.add_resource(Login,'/login')
+api.add_resource(Logout,'/logout')
+api.add_resource(CheckSession,'/check_session')
 
 
 if __name__ == '__main__':
